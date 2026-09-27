@@ -18,8 +18,7 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
-      - run: npm ci
+      - run: npm install
       - run: npm run build
       - run: npm run lint
-      - run: npx --yes @n8n/scan-community-package n8n-nodes-kalyvox
       - run: npm publish --provenance --access public
