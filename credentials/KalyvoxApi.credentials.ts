@@ -8,6 +8,10 @@ import type {
 export class KalyvoxApi implements ICredentialType {
   name = 'kalyvoxApi';
   displayName = 'Kalyvox API';
+  icon = {
+    light: 'file:../nodes/Kalyvox/kalyvox.svg',
+    dark: 'file:../nodes/Kalyvox/kalyvox.svg',
+  } as const;
   documentationUrl = 'https://kalyvox.ai/en/help/api-kalyvox-zapier';
 
   properties: INodeProperties[] = [
@@ -18,8 +22,7 @@ export class KalyvoxApi implements ICredentialType {
       typeOptions: { password: true },
       default: '',
       required: true,
-      description:
-        'Workspace API key generated in Kalyvox under Settings > Integrations > Zapier.',
+      description: 'Workspace API key generated in Kalyvox under Settings > Integrations > Zapier',
     },
   ];
 
