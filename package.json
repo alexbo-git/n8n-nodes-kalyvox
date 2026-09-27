@@ -1,0 +1,61 @@
+{
+  "name": "n8n-nodes-kalyvox",
+  "version": "0.1.0",
+  "description": "Official n8n community node for Kalyvox, the AI phone receptionist for small businesses.",
+  "license": "MIT",
+  "homepage": "https://kalyvox.ai/en/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexbo-git/n8n-nodes-kalyvox.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alexbo-git/n8n-nodes-kalyvox/issues"
+  },
+  "author": "KALYVOX SASU",
+  "main": "dist/nodes/Kalyvox/Kalyvox.node.js",
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc && gulp build:icons",
+    "dev": "tsc --watch",
+    "format": "prettier nodes credentials --write",
+    "lint": "eslint nodes credentials package.json",
+    "lintfix": "eslint nodes credentials package.json --fix",
+    "prepublishOnly": "npm run build && npm run lint"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/KalyvoxApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Kalyvox/Kalyvox.node.js"
+    ]
+  },
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "kalyvox",
+    "ai-receptionist",
+    "voice-ai",
+    "telephony",
+    "automation",
+    "customer-service"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "@n8n/eslint-plugin-community-nodes": "^1.0.0",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.17.0",
+    "gulp": "^5.0.0",
+    "n8n-workflow": "^1.78.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.15"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
