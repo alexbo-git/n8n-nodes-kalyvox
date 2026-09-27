@@ -4,8 +4,9 @@ import type {
   INodeExecutionData,
   INodeType,
   INodeTypeDescription,
-  IRequestOptions,
+  IHttpRequestOptions,
 } from 'n8n-workflow';
+import { NodeConnectionTypes } from 'n8n-workflow';
 
 const BASE_URL = 'https://auth.kalyvox.ai/functions/v1/zapier-api';
 
@@ -13,27 +14,22 @@ export class Kalyvox implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'Kalyvox',
     name: 'kalyvox',
-    icon: 'file:kalyvox.svg',
+    icon: {
+      light: 'file:kalyvox.svg',
+      dark: 'file:kalyvox.svg',
+    },
     group: ['transform'],
     version: 1,
     subtitle: '={{$parameter["operation"]}}',
     description: 'Work with Kalyvox call tickets',
-    defaults: {
-      name: 'Kalyvox',
-    },
-    inputs: ['main'],
-    outputs: ['main'],
-    credentials: [
-      {
-        name: 'kalyvoxApi',
-        required: true,
-      },
-    ],
+    defaults: { name: 'Kalyvox' },
+    usableAsTool: true,
+    inputs: [NodeConnectionTypes.Main],
+    outputs: [NodeConnectionTypes.Main],
+    credentials: [{ name: 'kalyvoxApi', required: true }],
     requestDefaults: {
       baseURL: BASE_URL,
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: { Accept: 'application/json' },
     },
     properties: [
       {
@@ -41,12 +37,7 @@ export class Kalyvox implements INodeType {
         name: 'resource',
         type: 'options',
         noDataExpression: true,
-        options: [
-          {
-            name: 'Call Ticket',
-            value: 'ticket',
-          },
-        ],
+        options: [{ name: 'Call Ticket', value: 'ticket' }],
         default: 'ticket',
       },
       {
@@ -54,11 +45,7 @@ export class Kalyvox implements INodeType {
         name: 'operation',
         type: 'options',
         noDataExpression: true,
-        displayOptions: {
-          show: {
-            resource: ['ticket'],
-          },
-        },
+        displayOptions: { show: { resource: ['ticket'] } },
         options: [
           {
             name: 'Get Recent',
@@ -79,18 +66,12 @@ export class Kalyvox implements INodeType {
         displayName: 'Limit',
         name: 'limit',
         type: 'number',
-        default: 20,
-        typeOptions: {
-          minValue: 1,
-          maxValue: 100,
-        },
+        default: 50,
+        typeOptions: { minValue: 1, maxValue: 100 },
         displayOptions: {
-          show: {
-            resource: ['ticket'],
-            operation: ['getRecent', 'search'],
-          },
+          show: { resource: ['ticket'], operation: ['getRecent', 'search'] },
         },
-        description: 'Maximum number of tickets to return',
+        description: 'Max number of results to return',
       },
       {
         displayName: 'Filters',
@@ -99,10 +80,7 @@ export class Kalyvox implements INodeType {
         placeholder: 'Add Filter',
         default: {},
         displayOptions: {
-          show: {
-            resource: ['ticket'],
-            operation: ['search'],
-          },
+          show: { resource: ['ticket'], operation: ['search'] },
         },
         options: [
           {
@@ -138,9 +116,9 @@ export class Kalyvox implements INodeType {
             default: '',
             options: [
               { name: 'Any', value: '' },
-              { name: 'Open', value: 'open' },
-              { name: 'In Progress', value: 'in_progress' },
               { name: 'Closed', value: 'closed' },
+              { name: 'In Progress', value: 'in_progress' },
+              { name: 'Open', value: 'open' },
               { name: 'Pending', value: 'pending' },
               { name: 'Resolved', value: 'resolved' },
             ],
@@ -152,8 +130,8 @@ export class Kalyvox implements INodeType {
             default: '',
             options: [
               { name: 'Any', value: '' },
-              { name: 'Normal', value: 'normal' },
               { name: 'High', value: 'high' },
+              { name: 'Normal', value: 'normal' },
             ],
           },
         ],
@@ -167,9 +145,8 @@ export class Kalyvox implements INodeType {
 
     for (let i = 0; i < items.length; i++) {
       const operation = this.getNodeParameter('operation', i) as string;
-      const limit = this.getNodeParameter('limit', i, 20) as number;
-
-      let options: IRequestOptions;
+      const limit = this.getNodeParameter('limit', i, 50) as number;
+      let options: IHttpRequestOptions;
 
       if (operation === 'getRecent') {
         options = {
@@ -178,50 +155,49 @@ export class Kalyvox implements INodeType {
           qs: { limit },
           json: true,
         };
-
-        const response = await this.helpers.requestWithAuthentication.call(
+        const response = await this.helpers.httpRequestWithAuthentication.call(
           this,
           'kalyvoxApi',
           options,
         );
-
         const tickets = Array.isArray(response) ? response : [];
         for (const ticket of tickets) {
-          returnData.push({ json: ticket as IDataObject });
+          returnData.push({
+            json: ticket as IDataObject,
+            pairedItem: { item: i },
+          });
         }
         continue;
       }
 
-      if (operation === 'search') {
-        const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
-        const qs: IDataObject = { limit };
+      const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
+      const qs: IDataObject = { limit };
+      if (filters.createdAfter) qs.created_after = filters.createdAfter;
+      if (filters.createdBefore) qs.created_before = filters.createdBefore;
+      if (filters.status) qs.status = filters.status;
+      if (filters.urgency) qs.urgency = filters.urgency;
+      if (filters.intent) qs.intent = filters.intent;
+      if (filters.callerPhone) qs.caller_phone = filters.callerPhone;
 
-        if (filters.createdAfter) qs.created_after = filters.createdAfter;
-        if (filters.createdBefore) qs.created_before = filters.createdBefore;
-        if (filters.status) qs.status = filters.status;
-        if (filters.urgency) qs.urgency = filters.urgency;
-        if (filters.intent) qs.intent = filters.intent;
-        if (filters.callerPhone) qs.caller_phone = filters.callerPhone;
+      options = {
+        method: 'GET',
+        url: `${BASE_URL}/v1/tickets/search`,
+        qs,
+        json: true,
+      };
+      const response = (await this.helpers.httpRequestWithAuthentication.call(
+        this,
+        'kalyvoxApi',
+        options,
+      )) as { results?: IDataObject[] };
 
-        options = {
-          method: 'GET',
-          url: `${BASE_URL}/v1/tickets/search`,
-          qs,
-          json: true,
-        };
-
-        const response = (await this.helpers.requestWithAuthentication.call(
-          this,
-          'kalyvoxApi',
-          options,
-        )) as { results?: IDataObject[] };
-
-        for (const ticket of response.results ?? []) {
-          returnData.push({ json: ticket });
-        }
+      for (const ticket of response.results ?? []) {
+        returnData.push({
+          json: ticket,
+          pairedItem: { item: i },
+        });
       }
     }
-
     return [returnData];
   }
 }
